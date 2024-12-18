@@ -98,12 +98,11 @@ struct ContentView: View {
            // Bottom Navigation Bar
            .safeAreaInset(edge: .bottom) {
                HStack {
-                   NavigationLink(destination: Text("Home")) {
-                       VStack {
-                           Image(systemName: "house.fill")
-                           Text("Home")
-                               .font(.caption)
-                       }
+                   // Non-functional Home button
+                   VStack {
+                       Image(systemName: "house.fill")
+                       Text("Home")
+                           .font(.caption)
                    }
                    .foregroundColor(.black)
                    
