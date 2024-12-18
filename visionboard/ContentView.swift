@@ -143,64 +143,68 @@ struct ContentView: View {
 }
 
 struct SwipeView<Content: View>: View {
-   let content: Content
-   let onDelete: () -> Void
-   
-   @State private var offset: CGFloat = 0
-   @State private var isSwiping = false
-   @State private var showingDeleteAlert = false
-   
-   init(@ViewBuilder content: () -> Content, onDelete: @escaping () -> Void) {
-       self.content = content()
-       self.onDelete = onDelete
-   }
-   
-   var body: some View {
-       ZStack(alignment: .trailing) {
-           // Delete background
-           Rectangle()
-               .foregroundColor(.red)
-               .frame(width: abs(offset))
-               .overlay(
-                   Image(systemName: "trash")
-                       .foregroundColor(.white)
-                       .padding(.trailing, 25)
-                   , alignment: .trailing
-               )
-           
-           // Content
-           content
-               .offset(x: offset)
-               .gesture(
-                   DragGesture()
-                       .onChanged { value in
-                           withAnimation {
-                               if value.translation.width < 0 {
-                                   offset = value.translation.width
-                               }
-                               isSwiping = true
-                           }
-                       }
-                       .onEnded { value in
-                           withAnimation {
-                               if value.translation.width < -100 {
-                                   showingDeleteAlert = true
-                               }
-                               offset = 0
-                               isSwiping = false
-                           }
-                       }
-               )
-       }
-       .alert("Are you sure?", isPresented: $showingDeleteAlert) {
-           Button("Delete", role: .destructive) {
-               onDelete()
-           }
-           Button("Cancel", role: .cancel) {}
-       } message: {
-           Text("If you hit the button, this desire will be deleted.")
-       }
-   }
+    let content: Content
+    let onDelete: () -> Void
+    
+    @State private var offset: CGFloat = 0
+    @State private var showingDeleteAlert = false
+    
+    init(@ViewBuilder content: () -> Content, onDelete: @escaping () -> Void) {
+        self.content = content()
+        self.onDelete = onDelete
+    }
+    
+    var body: some View {
+        ZStack(alignment: .trailing) {
+            // Delete background
+            if offset < 0 {
+                Rectangle()
+                    .foregroundColor(.red)
+                    .frame(width: abs(offset))
+                    .overlay(
+                        Image(systemName: "trash")
+                            .foregroundColor(.white)
+                            .padding(.trailing, 25)
+                        , alignment: .trailing
+                    )
+            }
+            
+            // Content
+            content
+                .offset(x: offset)
+                .gesture(
+                    DragGesture(minimumDistance: 20, coordinateSpace: .local)
+                        .onChanged { gesture in
+                            let horizontalTranslation = gesture.translation.width
+                            let verticalTranslation = gesture.translation.height
+                            
+                            // Only respond if the gesture is primarily horizontal
+                            // and moving left (negative translation)
+                            if abs(horizontalTranslation) > abs(verticalTranslation) && horizontalTranslation < 0 {
+                                withAnimation {
+                                    offset = max(horizontalTranslation, -100)
+                                }
+                            }
+                        }
+                        .onEnded { gesture in
+                            withAnimation {
+                                if offset < -50 {
+                                    showingDeleteAlert = true
+                                }
+                                offset = 0
+                            }
+                        }
+                )
+        }
+        .alert("Are you sure?", isPresented: $showingDeleteAlert) {
+            Button("Delete", role: .destructive) {
+                onDelete()
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("If you hit the button, this desire will be deleted.")
+        }
+    }
 }
 
 struct DesireCard: View {
